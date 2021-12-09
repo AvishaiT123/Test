@@ -1,38 +1,77 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace Unity.FPS.Game
 {
-    // This class contains general information describing an actor (player or enemies).
-    // It is mostly used for AI detection logic and determining if an actor is friend or foe
-    public class Actor : MonoBehaviour
+    public class AudioUtility
     {
-        [Tooltip("Represents the affiliation (or team) of the actor. Actors of the same affiliation are friendly to each other")]
-        public int Affiliation;
+        static AudioManager s_AudioManager;
 
-        [Tooltip("Represents point where other actors will aim when they attack this actor")]
-        public Transform AimPoint;
-
-        ActorsManager m_ActorsManager;
-
-        void Start()
+        public enum AudioGroups
         {
-            m_ActorsManager = GameObject.FindObjectOfType<ActorsManager>();
-            DebugUtility.HandleErrorIfNullFindObject<ActorsManager, Actor>(m_ActorsManager, this);
-
-            // Register as an actor
-            if (!m_ActorsManager.Actors.Contains(this))
-            {
-                m_ActorsManager.Actors.Add(this);
-            }
+            DamageTick,
+            Impact,
+            EnemyDetection,
+            Pickup,
+            WeaponShoot,
+            WeaponOverheat,
+            WeaponChargeBuildup,
+            WeaponChargeLoop,
+            HUDVictory,
+            HUDObjective,
+            EnemyAttack
         }
 
-        void OnDestroy()
+        public static void CreateSFX(AudioClip clip, Vector3 position, AudioGroups audioGroup, float spatialBlend,
+            float rolloffDistanceMin = 1f)
         {
-            // Unregister as an actor
-            if (m_ActorsManager)
-            {
-                m_ActorsManager.Actors.Remove(this);
-            }
+            GameObject impactSfxInstance = new GameObject();
+            impactSfxInstance.transform.position = position;
+            AudioSource source = impactSfxInstance.AddComponent<AudioSource>();
+            source.clip = clip;
+            source.spatialBlend = spatialBlend;
+            source.minDistance = rolloffDistanceMin;
+            source.Play();
+
+            source.outputAudioMixerGroup = GetAudioGroup(audioGroup);
+
+            TimedSelfDestruct timedSelfDestruct = impactSfxInstance.AddComponent<TimedSelfDestruct>();
+            timedSelfDestruct.LifeTime = clip.length;
+        }
+
+        public static AudioMixerGroup GetAudioGroup(AudioGroups group)
+        {
+            if (s_AudioManager == null)
+                s_AudioManager = GameObject.FindObjectOfType<AudioManager>();
+
+            var groups = s_AudioManager.FindMatchingGroups(group.ToString());
+
+            if (groups.Length > 0)
+                return groups[0];
+
+            Debug.LogWarning("Didn't find audio group for " + group.ToString());
+            return null;
+        }
+
+        public static void SetMasterVolume(float value)
+        {
+            if (s_AudioManager == null)
+                s_AudioManager = GameObject.FindObjectOfType<AudioManager>();
+
+            if (value <= 0)
+                value = 0.001f;
+            float valueInDb = Mathf.Log10(value) * 20;
+
+            s_AudioManager.SetFloat("MasterVolume", valueInDb);
+        }
+
+        public static float GetMasterVolume()
+        {
+            if (s_AudioManager == null)
+                s_AudioManager = GameObject.FindObjectOfType<AudioManager>();
+
+            s_AudioManager.GetFloat("MasterVolume", out var valueInDb);
+            return Mathf.Pow(10f, valueInDb / 20.0f);
         }
     }
 }
