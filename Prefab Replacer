@@ -1,40 +1,18 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Unity.FPS.Game
 {
-    [System.Serializable]
-    public struct MinMaxFloat
+    public class PrefabReplacer : MonoBehaviour
     {
-        public float Min;
-        public float Max;
-
-        public float GetValueFromRatio(float ratio)
+        [System.Serializable]
+        public struct ReplacementDefinition
         {
-            return Mathf.Lerp(Min, Max, ratio);
+            public GameObject SourcePrefab;
+            public GameObject TargetPrefab;
         }
-    }
 
-    [System.Serializable]
-    public struct MinMaxColor
-    {
-        [ColorUsage(true, true)] public Color Min;
-        [ColorUsage(true, true)] public Color Max;
-
-        public Color GetValueFromRatio(float ratio)
-        {
-            return Color.Lerp(Min, Max, ratio);
-        }
-    }
-
-    [System.Serializable]
-    public struct MinMaxVector3
-    {
-        public Vector3 Min;
-        public Vector3 Max;
-
-        public Vector3 GetValueFromRatio(float ratio)
-        {
-            return Vector3.Lerp(Min, Max, ratio);
-        }
+        public bool SwitchOrder;
+        public List<ReplacementDefinition> Replacements = new List<ReplacementDefinition>();
     }
 }
